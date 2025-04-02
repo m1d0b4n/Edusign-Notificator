@@ -3,10 +3,13 @@ import requests
 import time
 from datetime import datetime, timedelta
 import pytz
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
-WEBHOOKS_FILE = "webhooks.json"
-MESSAGE = {"content": "🤖 ⚠️ 📝 @APPRENANTS pensez à signer sur Edusign !"}
+# ======== CONFIGURATION ==========
+WEBHOOKS_FILE = "webhooks.json" # Fichier contenant les webhooks au format JSON
+MESSAGE = {"content": "⚠️ 📝 @APPRENANTS pensez à signer sur Edusign ! ```CE MESSAGE EST UN TEST (suppression dans 5 secondes)```"}
+HEURES_AUTORISEES = [(9, 32), (15, 54)] # Heures d'envoi (heure, minute)
+SUPPRESSION_DELAY = 5 # Délai avant suppression (en minutes)
+# =================================
 
 tz = pytz.timezone("Europe/Paris")
 messages_a_supprimer = []
@@ -26,7 +29,7 @@ def charger_webhooks():
     return webhooks
 
 def est_heure_d_envoi(now):
-    return now.weekday() < 5 and (now.hour, now.minute) in [(9, 32), (14, 2)]
+    return now.weekday() < 5 and (now.hour, now.minute) in HEURES_AUTORISEES
 
 def envoyer_messages(webhooks):
     for nom, url in webhooks.items():
@@ -39,7 +42,7 @@ def envoyer_messages(webhooks):
                 messages_a_supprimer.append({
                     "url": url.split('?')[0],  # Pour les suppressions, enlever le ?wait=true
                     "message_id": message_id,
-                    "delete_at": datetime.now(tz) + timedelta(minutes=30)
+                    "delete_at": datetime.now(tz) + timedelta(seconds=SUPPRESSION_DELAY)
                 })
                 print(f"✅ Message envoyé à {nom} ({message_id})")
             else:
