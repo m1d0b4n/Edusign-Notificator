@@ -6,9 +6,9 @@ import pytz
 
 # ======== CONFIGURATION ==========
 WEBHOOKS_FILE = "webhooks.json" # Fichier contenant les webhooks au format JSON
-MESSAGE = {"content": "⚠️ 📝 @APPRENANTS pensez à signer sur Edusign ! ```CE MESSAGE EST UN TEST (suppression dans 5 secondes)```"}
-HEURES_AUTORISEES = [(9, 32), (15, 54)] # Heures d'envoi (heure, minute)
-SUPPRESSION_DELAY = 5 # Délai avant suppression (en minutes)
+MESSAGE = {"content": "⚠️ 📝 @APPRENANTS pensez à signer sur Edusign ! (suppression de ce message dans 20 minutes)"}
+HEURES_AUTORISEES = [(9, 49), (14, 5)] # Heures d'envoi (heure, minute)
+SUPPRESSION_DELAY = 20 # Délai avant suppression (en minutes)
 # =================================
 
 tz = pytz.timezone("Europe/Paris")
@@ -42,7 +42,7 @@ def envoyer_messages(webhooks):
                 messages_a_supprimer.append({
                     "url": url.split('?')[0],  # Pour les suppressions, enlever le ?wait=true
                     "message_id": message_id,
-                    "delete_at": datetime.now(tz) + timedelta(seconds=SUPPRESSION_DELAY)
+                    "delete_at": datetime.now(tz) + timedelta(minutes=SUPPRESSION_DELAY)
                 })
                 print(f"✅ Message envoyé à {nom} ({message_id})")
             else:
