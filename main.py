@@ -6,7 +6,7 @@ import pytz
 
 # ======== CONFIGURATION ==========
 WEBHOOKS_FILE = "webhooks.json" # Fichier contenant les webhooks au format JSON
-MESSAGE = {"content": "⚠️ 📝 @APPRENANTS pensez à signer sur Edusign ! (suppression de ce message dans 20 minutes)"}
+MESSAGE = {"content": "⚠️ 📝 @APPRENANTS pensez à signer sur Edusign ! (suppression de ce message dans {SUPPRESSION_DELAY} minutes)"}
 HEURES_AUTORISEES = [(9, 49), (14, 5)] # Heures d'envoi (heure, minute)
 SUPPRESSION_DELAY = 20 # Délai avant suppression (en minutes)
 # =================================
