@@ -1,37 +1,47 @@
 # 📝 EduSign Notificator (version locale)
 
-Petit script Python qui envoie automatiquement des rappels sur des canaux Discord via des **webhooks**, à 9h35 et 14h05 du lundi au vendredi.  
-Les messages sont automatiquement supprimés après **35 minutes** pour garder les salons propres.
+Script Python qui envoie automatiquement des rappels de signature sur EduSign via **webhooks Discord**, à 9h35 et 14h05 du lundi au vendredi.  
+Les messages sont automatiquement **supprimés après un délai configurable**.
+
+> 💡 Nouvelle version modulaire avec structure claire, citation du jour, et test à la volée.
 
 ---
 
 ## 🚀 Fonctionnalités
 
-- ⏰ Envoi automatique à 9h35 et 14h05 (heure de Paris)
-- 📅 Jours ouvrés uniquement (lundi → vendredi)
-- 🔊 Message TTS + emoji
-- 🧹 Suppression automatique des messages après 35 minutes
-- 💻 Fonctionne **en local ou sur un serveur** (Linux, Raspberry Pi, VPS...)
+- ⏰ Envoi automatique à 9h35 et 14h05 (heure de Paris, jours ouvrés uniquement)
+- 🤖 Message dynamique pioché aléatoirement dans une liste
+- 🧠 Ajout d’un fait historique traduit en français chaque matin
+- 🧹 Suppression automatique des messages après `x` minutes (configurable)
+- 🧪 Envoi manuel immédiat avec `--test`
+- 🧼 Code modulaire pour une meilleure maintenabilité
+
+---
+
+## 📁 Structure du projet
+
+```
+Edusign-Notificator/
+├── main.py                  # Point d’entrée du script
+├── webhooks.json            # Liste des webhooks Discord
+├── messages.json            # Messages aléatoires à afficher
+├── requirements.txt
+├── README.md
+└── modules/
+    ├── config.py            # Constantes de configuration
+    ├── utils.py             # Fonction pour récupérer la citation du jour
+    ├── message_builder.py   # Construction du message
+    └── dispatcher.py        # Envoi + suppression automatique
+```
 
 ---
 
 ## 📦 Prérequis
 
-- Python 3.7 ou plus
-- Un ou plusieurs **webhooks Discord**
-- Une machine qui peut exécuter un script en continu (ordi perso, serveur, Raspberry Pi...)
-
----
-
-## 🧰 Structure du projet
-
-```txt
-Edusign-Notificator/
-├── main.py                   # Script principal avec boucle continue
-├── webhooks.json             # Liste des webhooks Discord
-├── requirements.txt          # Dépendances Python
-└── README.md                 
-```
+- Python 3.7+
+- Un ou plusieurs **webhooks Discord** :  
+  [📄 Guide officiel Discord – Webhooks](https://support.discord.com/hc/fr/articles/228383668-Utiliser-les-Webhooks)
+- Une machine capable d’exécuter un script en continu (PC, VPS, Raspberry Pi…)
 
 ---
 
@@ -50,48 +60,64 @@ cd Edusign-Notificator
 pip install -r requirements.txt
 ```
 
-### 3. Remplis le fichier `webhooks.json`
-
-Suis ce guide officiel pour créer un webhook :  
-[📄 Discord – Guide Webhooks](https://support.discord.com/hc/fr/articles/228383668-Utiliser-les-Webhooks)
-
-Une fois ton webhook créé, copie l’URL et ajoute-la dans le fichier `_webhooks.json` :
+### 3. Configure les webhooks
 
 ```json
+// webhooks.json
 {
-  "general": "https://discord.com/api/webhooks/xxxx/...",
-  "annonces": "https://discord.com/api/webhooks/yyyy/..."
+  "canal-m1": "https://discord.com/api/webhooks/...",
+  "canal-m2": "https://discord.com/api/webhooks/..."
 }
 ```
 
-⚠️ Pense à renommer le fichier, enlève juste le `_` .
+### 4. Configure les messages
 
-### 4. Lance le script
+```json
+// messages.json
+[
+  "📸 Dites « signé ! » ✍️",
+  "💼 Vous êtes presque pro ? Alors signez comme des pros !",
+  "📝 Une signature aujourd'hui, un avenir assuré demain.",
+  "⚠️ Pas de signature, pas d’attestation !"
+]
+```
+
+### 5. Lance le script
 
 ```bash
 python main.py
 ```
 
-Tu verras une ligne `[HH:MM] Tick` chaque minute, et des logs quand un message est envoyé ou supprimé.
+Tu verras un `[HH:MM] Tick` chaque minute et des logs clairs en console.
 
 ---
 
-## 🧪 Tester rapidement
+## 🧪 Lancer un test immédiatement
 
-Tu peux modifier temporairement l’heure d’envoi dans `main.py` :
+```bash
+python main.py --test
+```
+
+👉 Cela envoie un message immédiatement et le supprime automatiquement après le délai défini.
+
+---
+
+## ⚙️ Personnaliser les horaires ou paramètres
+
+Modifie `modules/config.py` :
 
 ```python
-HEURES_AUTORISEES = [(15, 46)]  # Pour tester à 15h46 par exemple
+HEURES_AUTORISEES = [(9, 35), (14, 5)]  # Horaire Paris
+SUPPRESSION_DELAY = 30  # En minutes
+MENTION_ROLE_ID = ""  # Rôle Discord à ping : ex. "123456789012345678"
 ```
 
 ---
 
-## 📌 Astuce : Lancer automatiquement au démarrage
+## 📌 Exécution automatique au démarrage
 
-Si tu veux que le script tourne en continu après redémarrage :
-
-- Sur Linux : ajoute-le à `rc.local`, `systemd`, ou un `tmux`/`screen`
-- Sur Windows : tâche planifiée
+- **Linux** : via `systemd`, `tmux`, `rc.local`, etc.
+- **Windows** : via le Planificateur de tâches (`taskschd.msc`)
 
 ---
 
@@ -106,13 +132,12 @@ pytz
 
 ## 🛡️ Licence
 
-Ce projet est open-source.  
-Tu peux l’utiliser et l’adapter librement, tant que tu crédites l’auteur original [m1d0b4n](https://github.com/m1d0b4n)
+Projet open-source. Tu peux l’utiliser et le modifier librement, tant que tu crédites l’auteur original [@m1d0b4n](https://github.com/m1d0b4n).
 
 ---
 
 ## 🙏 Merci
 
-Ce projet a été conçu pour automatiser de façon simple et efficace les notifications de signatures de présence EduSign des apprenants sur les serveurs Discord de l'établissement Livecampus ✊
+Ce projet a été conçu pour automatiser de façon simple et efficace les rappels de signature EduSign sur les serveurs Discord de l’établissement **Livecampus** 🎓
 
-🏗️🚧 Des améliorations sont à venir...
+> 🧠 Avec une touche de culture générale chaque matin 💛
