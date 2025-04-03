@@ -7,11 +7,17 @@ from modules.dispatcher import (
     envoyer_messages,
     supprimer_messages,
 )
+from modules.ascii_art import afficher_ascii
 
 def est_heure_d_envoi(now):
     return now.weekday() < 5 and (now.hour, now.minute) in HEURES_AUTORISEES
 
 def main():
+    
+    afficher_ascii()
+
+    print("🔄 Chargement des webhooks...")
+
     webhooks = charger_webhooks()
     test_mode = "--test" in sys.argv
 
