@@ -9,7 +9,7 @@ import random
 # ======== CONFIGURATION ==========
 WEBHOOKS_FILE = "webhooks.json"  # Fichier contenant les webhooks
 HEURES_AUTORISEES = [(9, 35), (14, 5)]  # Heures d'envoi (heure, minute)
-SUPPRESSION_DELAY = 20  # Délai avant suppression (en minutes)
+SUPPRESSION_DELAY = 30  # Délai avant suppression (en minutes)
 MENTION_ROLE_ID = ""  # Renseigne l'ID du rôle à taguer ou laisse vide ""
 # =================================
 
@@ -33,36 +33,70 @@ def charger_webhooks():
 def est_heure_d_envoi(now):
     return now.weekday() < 5 and (now.hour, now.minute) in HEURES_AUTORISEES
 
-def construire_message():
+def get_daily_fact():
+    try:
+        today = f"{datetime.now(tz).month}/{datetime.now(tz).day}"
+        res = requests.get(f"http://numbersapi.com/{today}/date", timeout=5)
+        if res.status_code != 200:
+            return None
+        english_fact = res.text
+
+        try:
+            translation_res = requests.get(
+                "https://api.mymemory.translated.net/get",
+                params={"q": english_fact, "langpair": "en|fr"},
+                timeout=5
+            )
+            if translation_res.status_code == 200:
+                translated = translation_res.json()["responseData"]["translatedText"]
+                return f"{translated}"
+        except Exception as e:
+            print(f"⚠️ Erreur traduction MyMemory : {e}")
+
+        return f"{english_fact}"
+
+    except Exception as e:
+        print(f"⚠️ Erreur récupération fact of the day : {e}")
+        return None
+
+def construire_message(test_mode=False):
+    now = datetime.now(tz)
+
+    # Message principal
+    message_texte = "📢 Pensez à signer sur EduSign !"
     try:
         with open("messages.json", "r", encoding="utf-8") as f:
             descriptions = json.load(f)
+            message_texte = random.choice(descriptions)
     except Exception as e:
         print(f"⚠️ Erreur chargement messages.json : {e}")
-        descriptions = ["📝 Merci de signer sur EduSign !"]
 
-    # Choisir un message au hasard
-    description_base = random.choice(descriptions)
-    full_description = f"{description_base}\n\nCe message sera supprimé dans {SUPPRESSION_DELAY} minute(s)."
+    # Construction du message
+    contenu = "**[👉 Accéder à EduSign](https://edusign.app/student/)**\n"
+    contenu += f"{message_texte}\n"
 
-    message = {
-        "embeds": [{
-            "title": "Signature EduSign requise",
-            "description": full_description,
-            "url": "https://edusign.app/student/",
-            "color": 16776960
-        }]
-    }
+    # Ajout d’une citation uniquement le matin ou en test
+    if now.hour < 12 or test_mode:
+        citation = get_daily_fact()
+        if citation:
+            contenu += f"\n🧠 **Le saviez-vous ?**\n{citation}"
+        else:
+            print("⚠️ Aucune citation récupérée.")
+
+    # Ajout du délai de suppression
+    contenu += f"\n\n⌛ Ce message sera supprimé dans {SUPPRESSION_DELAY} minute(s)."
+
+    message = {"content": contenu}
 
     if MENTION_ROLE_ID:
-        message["content"] = f"<@&{MENTION_ROLE_ID}>"
+        message["content"] = f"<@&{MENTION_ROLE_ID}>\n{message['content']}"
 
     return message
 
 def envoyer_messages(webhooks):
     for nom, url in webhooks.items():
         try:
-            message = construire_message()
+            message = construire_message(test_mode="--test" in sys.argv)
             response = requests.post(url, json=message)
             response.raise_for_status()
 
