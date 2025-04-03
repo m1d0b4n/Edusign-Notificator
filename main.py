@@ -3,12 +3,13 @@ import requests
 import time
 from datetime import datetime, timedelta
 import pytz
+import sys
 
 # ======== CONFIGURATION ==========
-WEBHOOKS_FILE = "webhooks.json" # Fichier contenant les webhooks au format JSON
-MESSAGE = {"content": "⚠️ 📝 @APPRENANTS pensez à signer sur Edusign ! (suppression de ce message dans {SUPPRESSION_DELAY} minutes)"}
-HEURES_AUTORISEES = [(9, 49), (14, 5)] # Heures d'envoi (heure, minute)
-SUPPRESSION_DELAY = 20 # Délai avant suppression (en minutes)
+WEBHOOKS_FILE = "webhooks.json"  # Fichier contenant les webhooks
+HEURES_AUTORISEES = [(9, 35), (14, 5)]  # Heures d'envoi (heure, minute)
+SUPPRESSION_DELAY = 20  # Délai avant suppression (en minutes)
+MENTION_ROLE_ID = ""  # Renseigne l'ID du rôle à taguer ou laisse vide ""
 # =================================
 
 tz = pytz.timezone("Europe/Paris")
@@ -31,16 +32,32 @@ def charger_webhooks():
 def est_heure_d_envoi(now):
     return now.weekday() < 5 and (now.hour, now.minute) in HEURES_AUTORISEES
 
+def construire_message():
+    message = {
+        "embeds": [{
+            "title": "Signature EduSign requise",
+            "description": f"📝 Merci de signer sur EduSign !\n\nCe message sera supprimé dans {SUPPRESSION_DELAY} minute(s).",
+            "url": "https://edusign.app/student/",
+            "color": 16776960  # Jaune
+        }]
+    }
+
+    if MENTION_ROLE_ID:
+        message["content"] = f"<@&{MENTION_ROLE_ID}>"
+
+    return message
+
 def envoyer_messages(webhooks):
     for nom, url in webhooks.items():
         try:
-            response = requests.post(url, json=MESSAGE)
+            message = construire_message()
+            response = requests.post(url, json=message)
             response.raise_for_status()
 
             if response.status_code == 200 and response.content:
                 message_id = response.json()["id"]
                 messages_a_supprimer.append({
-                    "url": url.split('?')[0],  # Pour les suppressions, enlever le ?wait=true
+                    "url": url.split('?')[0],
                     "message_id": message_id,
                     "delete_at": datetime.now(tz) + timedelta(minutes=SUPPRESSION_DELAY)
                 })
@@ -69,14 +86,23 @@ def supprimer_messages():
 
 def main():
     webhooks = charger_webhooks()
+
+    # Si lancé avec --test → envoie immédiatement + entre dans la boucle pour suppression
+    test_mode = "--test" in sys.argv
+    if test_mode:
+        print("🧪 Envoi immédiat (mode test)")
+        envoyer_messages(webhooks)
+
     last_minute = None
     while True:
         now = datetime.now(tz)
         if now.minute != last_minute:
             last_minute = now.minute
             print(f"[{now.strftime('%H:%M')}] Tick")
-            if est_heure_d_envoi(now):
+            if est_heure_d_envoi(now) and not test_mode:
                 envoyer_messages(webhooks)
+            supprimer_messages()
+        else:
             supprimer_messages()
         time.sleep(1)
 
