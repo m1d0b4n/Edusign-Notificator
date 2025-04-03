@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timedelta
 import pytz
 import sys
+import random
 
 # ======== CONFIGURATION ==========
 WEBHOOKS_FILE = "webhooks.json"  # Fichier contenant les webhooks
@@ -33,12 +34,23 @@ def est_heure_d_envoi(now):
     return now.weekday() < 5 and (now.hour, now.minute) in HEURES_AUTORISEES
 
 def construire_message():
+    try:
+        with open("messages.json", "r", encoding="utf-8") as f:
+            descriptions = json.load(f)
+    except Exception as e:
+        print(f"⚠️ Erreur chargement messages.json : {e}")
+        descriptions = ["📝 Merci de signer sur EduSign !"]
+
+    # Choisir un message au hasard
+    description_base = random.choice(descriptions)
+    full_description = f"{description_base}\n\nCe message sera supprimé dans {SUPPRESSION_DELAY} minute(s)."
+
     message = {
         "embeds": [{
             "title": "Signature EduSign requise",
-            "description": f"📝 Merci de signer sur EduSign !\n\nCe message sera supprimé dans {SUPPRESSION_DELAY} minute(s).",
+            "description": full_description,
             "url": "https://edusign.app/student/",
-            "color": 16776960  # Jaune
+            "color": 16776960
         }]
     }
 
